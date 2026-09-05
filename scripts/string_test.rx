@@ -1,0 +1,40 @@
+outn("--- literals and escapes ---");
+outn("hello world");
+outn("line1\nline2");
+outn("tab\tseparated");
+outn("\"quoted\"");
+
+outn("--- concatenation ---");
+var s1 = "radix";
+var s2 = "lang";
+outn(s1 + " " + s2);
+outn("answer: " + 42);
+outn(100 + " percent");
+outn("status: " + true);
+
+outn("--- comparison ---");
+outn("abc" == "abc");
+outn("abc" == "xyz");
+outn("abc" != "xyz");
+outn("apple" < "banana");
+outn("cat" > "bat");
+outn("dog" <= "dog");
+outn("dog" >= "dog");
+
+outn("--- builtins ---");
+outn(len("123456789"));
+outn(char_at("hello", 0));
+outn(char_at("hello", 4));
+outn(char_at("hello", 99));
+outn(substr("hello world", 6, 5));
+outn(ord("Z"));
+outn(ord("hello", 1));
+outn(chr(66));
+outn(str(12345));
+outn(num("500") + 25);
+outn(find("plan9 unix bell_labs", "bell_labs"));
+outn(find("plan9 unix bell_labs", "linux"));
+
+out("step1 ");
+out("step2 ");
+outn("step3");

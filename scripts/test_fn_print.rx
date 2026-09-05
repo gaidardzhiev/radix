@@ -1,0 +1,2 @@
+var f = func(x) => x;
+outn(f);

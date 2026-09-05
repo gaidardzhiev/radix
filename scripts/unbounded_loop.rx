@@ -1,0 +1,9 @@
+var i = 0;
+var done = false;
+while (!done) {
+    i = i + 1;
+    if (i == 10) {
+        outn(i);
+        done = true;
+    }
+}

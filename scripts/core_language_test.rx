@@ -1,0 +1,40 @@
+{
+    var a = 10;
+    const b = 5;
+    var c = a + b * 2;
+    outn(c);
+
+    if (c > 15) {
+        outn(1);
+    } elif (c > 10) {
+        outn(2);
+    } else {
+        outn(3);
+    }
+
+    var count = 0;
+    while (count < 5) {
+        outn(count);
+        count = count + 1;
+    }
+
+    var multiply = func (x, y) => {
+        x * y;
+    };
+
+    var result = multiply(4, 5);
+    outn(result);
+
+    var outer = func (x) => {
+        func (y) => {
+            x + y;
+        };
+    };
+    var add5 = outer(5);
+    outn(add5(10));
+
+    var val = true && false || true;
+    if (val == true) {
+        outn(42);
+    }
+}

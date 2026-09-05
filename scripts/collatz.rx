@@ -1,0 +1,15 @@
+var even = func(n) => n % 2 == 0;
+
+var collatz = func(n, steps) => {
+    if (n == 1) {
+        steps;
+    } else {
+        if (even(n)) {
+            collatz(n / 2, steps + 1);
+        } else {
+            collatz(n * 3 + 1, steps + 1);
+        }
+    }
+};
+
+outn(collatz(27, 0));

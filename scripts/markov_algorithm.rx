@@ -1,0 +1,63 @@
+var replace_first = func(text, pat, rep) => {
+	var pos = find(text, pat);
+	if (pos == -1) {
+		text;
+	} else {
+		var left = substr(text, 0, pos);
+		var right = substr(text, pos + len(pat), len(text) - pos - len(pat));
+		left + rep + right;
+	}
+};
+
+var run_markov = func(get_rule, nrules, text) => {
+	var i = 0;
+	var matched = false;
+	var current = text;
+	var terminal = false;
+
+	while (i < nrules && matched == false) {
+		var rule = get_rule(i);
+		var arrow = find(rule, "->");
+		var pat = substr(rule, 0, arrow);
+		var rep = substr(rule, arrow + 2, len(rule) - arrow - 2);
+		var is_term = (char_at(rep, 0) == ".");
+		if (is_term) {
+			rep = substr(rep, 1, len(rep) - 1);
+		}
+
+		if (find(current, pat) != -1) {
+			current = replace_first(current, pat, rep);
+			matched = true;
+			terminal = is_term;
+		} else {
+			i = i + 1;
+		}
+	}
+
+	if (matched == false || terminal == true) {
+		current;
+	} else {
+		run_markov(get_rule, nrules, current);
+	}
+};
+
+var inc_rules = func(k) => {
+	if (k == 0) {
+		"0+->.1";
+	} elif (k == 1) {
+		"1+->+0";
+	} elif (k == 2) {
+		"+->.1";
+	} else {
+		"";
+	}
+};
+
+var inc_markov = func(bin_str) => run_markov(inc_rules, 3, bin_str + "+");
+
+outn(inc_markov("0"));
+outn(inc_markov("1"));
+outn(inc_markov("10"));
+outn(inc_markov("1011"));
+outn(inc_markov("111"));
+outn(inc_markov("11111111"));

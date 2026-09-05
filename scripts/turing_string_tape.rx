@@ -1,0 +1,88 @@
+var step = func(transition, state, tape, head) => {
+	var act = transition(state, char_at(tape, head));
+	var comma1 = find(act, ",");
+	var next_state = num(substr(act, 0, comma1));
+	var rest = substr(act, comma1 + 1, len(act) - comma1 - 1);
+	var comma2 = find(rest, ",");
+	var write_sym = substr(rest, 0, comma2);
+	var dir = substr(rest, comma2 + 1, len(rest) - comma2 - 1);
+
+	var left = substr(tape, 0, head);
+	var right = "";
+	if (head + 1 < len(tape)) {
+		right = substr(tape, head + 1, len(tape) - head - 1);
+	}
+	var new_tape = left + write_sym + right;
+
+	if (dir == "H") {
+		new_tape;
+	} elif (dir == "R") {
+		var next_head = head + 1;
+		if (next_head >= len(new_tape)) {
+			new_tape = new_tape + "_";
+		}
+		step(transition, next_state, new_tape, next_head);
+	} else {
+		var next_head = 0;
+		if (head == 0) {
+			new_tape = "_" + new_tape;
+			next_head = 0;
+		} else {
+			next_head = head - 1;
+		}
+		step(transition, next_state, new_tape, next_head);
+	}
+};
+
+var inc_trans = func(state, sym) => {
+	if (state == 0) {
+		if (sym == "_") {
+			"0,_,R";
+		} else {
+			"1," + sym + ",R";
+		}
+	} elif (state == 1) {
+		if (sym == "_") {
+			"2,_,L";
+		} else {
+			"1," + sym + ",R";
+		}
+	} elif (state == 2) {
+		if (sym == "1") {
+			"2,0,L";
+		} elif (sym == "0") {
+			"3,1,H";
+		} else {
+			"3,1,H";
+		}
+	} else {
+		"3," + sym + ",H";
+	}
+};
+
+var clean = func(tape) => {
+	var start = 0;
+	while (start < len(tape) && char_at(tape, start) == "_") {
+		start = start + 1;
+	}
+	var end = len(tape);
+	while (end > start && char_at(tape, end - 1) == "_") {
+		end = end - 1;
+	}
+	if (start >= end) {
+		"";
+	} else {
+		substr(tape, start, end - start);
+	}
+};
+
+var inc = func(bin_str) => {
+	var final_tape = step(inc_trans, 0, "_" + bin_str + "_", 0);
+	clean(final_tape);
+};
+
+outn(inc("0"));
+outn(inc("1"));
+outn(inc("10"));
+outn(inc("1011"));
+outn(inc("11111111111111111111"));

@@ -1,0 +1,10 @@
+var factorial = func(n) => {
+    if (n == 0) {
+        1;
+    } else {
+        n * factorial(n - 1);
+    }
+};
+
+var result = factorial(5);
+outn(result);

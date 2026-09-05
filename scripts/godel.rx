@@ -1,0 +1,42 @@
+var power = func(b, e) => {
+    if (e == 0) { 1; }
+    else { b * power(b, e - 1); }
+};
+
+var length = func(n) => {
+    if (n < 10) { 1; }
+    else { length(n / 10) + 1; }
+};
+
+var get_symbol = func(n, i) => {
+    (n / power(10, i)) % 10;
+};
+
+var substitute = func(f, v, pos, acc, mul) => {
+    if (pos >= length(f)) {
+        acc;
+    } else {
+        var sym = get_symbol(f, pos);
+        if (sym == 7) {
+            substitute(f, v, pos + 1, acc + v * mul, mul * power(10, length(v)));
+        } else {
+            substitute(f, v, pos + 1, acc + sym * mul, mul * 10);
+        }
+    }
+};
+
+var diagonal = func(f) => {
+    substitute(f, f, 0, 0, 1);
+};
+
+var godels_formula = 157;
+var godels_sentence = diagonal(godels_formula);
+
+outn(godels_formula);
+outn(godels_sentence);
+outn(length(godels_sentence));
+outn(get_symbol(godels_sentence, 0));
+outn(get_symbol(godels_sentence, 1));
+outn(get_symbol(godels_sentence, 2));
+outn(get_symbol(godels_sentence, 3));
+outn(get_symbol(godels_sentence, 4));

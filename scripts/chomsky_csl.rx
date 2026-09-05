@@ -1,0 +1,41 @@
+var match_csl = func(s) => {
+	var total = len(s);
+	if (total == 0) {
+		0;
+	} else {
+		var i = 0;
+		var na = 0;
+		while (i < total && char_at(s, i) == "a") {
+			na = na + 1;
+			i = i + 1;
+		}
+
+		var nb = 0;
+		while (i < total && char_at(s, i) == "b") {
+			nb = nb + 1;
+			i = i + 1;
+		}
+
+		var nc = 0;
+		while (i < total && char_at(s, i) == "c") {
+			nc = nc + 1;
+			i = i + 1;
+		}
+
+		if (na > 0 && na == nb && nb == nc && i == total) {
+			1;
+		} else {
+			0;
+		}
+	}
+};
+
+outn(match_csl("abc"));
+outn(match_csl("aabbcc"));
+outn(match_csl("aaabbbccc"));
+outn(match_csl("aaaaabbbbbccccc"));
+outn(match_csl("aabbc"));
+outn(match_csl("aabbccc"));
+outn(match_csl("baabbcc"));
+outn(match_csl("abcabc"));
+outn(match_csl(""));

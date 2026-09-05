@@ -1,0 +1,26 @@
+var not = func(b) => {
+	if (b) { false; } else { true; }
+};
+
+var and = func(a, b) => a && b;
+var or = func(a, b) => a || b;
+
+var get_bit = func(num, bit) => {
+	if ((num / bit) % 2 == 0) { false; } else { true; }
+};
+
+var truth_table = func(f) => {
+	var i = 0;
+	while (i < 4) {
+		var a = get_bit(i, 2);
+		var b = get_bit(i, 1);
+		outn(f(a, b));
+		i = i + 1;
+	}
+};
+
+var de_morgan_1 = func(a, b) => {
+	not(and(a, b)) == or(not(a), not(b));
+};
+
+truth_table(de_morgan_1);

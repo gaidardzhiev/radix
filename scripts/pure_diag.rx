@@ -1,0 +1,9 @@
+var loops = func(f) => {
+    if (f(loops)) {
+        loops(loops);
+    } else {
+        0;
+    }
+};
+
+outn(loops(loops));

@@ -1,0 +1,2 @@
+var increment = func(x) => { x + 1; };
+outn(increment(7));

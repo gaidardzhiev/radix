@@ -1,0 +1,36 @@
+var cons = func(h, t) => func(w) => if (w == 0) { h; } else { t; };
+var car = func(p) => p(0);
+var cdr = func(p) => p(1);
+var nil = 0;
+var is_nil = func(p) => p == 0;
+
+var mk_token = func(type, val) => func(w) => if (w == 0) { type; } else { val; };
+var tok_type = func(tk) => tk(0);
+var tok_val = func(tk) => tk(1);
+
+var is_digit = func(c) => ord(c) >= 48 && ord(c) <= 57;
+var is_alpha = func(c) => c == "_" || (ord(c) >= 65 && ord(c) <= 90) || (ord(c) >= 97 && ord(c) <= 122);
+var is_alnum = func(c) => is_alpha(c) || is_digit(c);
+
+var tokenize = func(src) => {
+	var n = len(src);
+	var i = 0;
+	var head = nil;
+	var tail = nil;
+
+	var emit = func(type, val) => {
+		var tk = mk_token(type, val);
+		var node = cons(tk, nil);
+		if (is_nil(head)) {
+			head = node;
+			tail = node;
+		} else {
+			var old_tail = tail;
+			var update = func(w) => if (w == 0) { car(old_tail); } else { node; };
+			tail = node;
+		}
+	};
+
+	outn("tokenizer helper ready");
+};
+tokenize("123");

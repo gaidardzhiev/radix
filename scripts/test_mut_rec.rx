@@ -1,0 +1,16 @@
+var f = 0;
+var g = func(x) => {
+	if (x > 0) {
+		f(x - 1);
+	} else {
+		0;
+	}
+};
+f = func(x) => {
+	if (x > 0) {
+		g(x - 1);
+	} else {
+		1;
+	}
+};
+outn(f(10));

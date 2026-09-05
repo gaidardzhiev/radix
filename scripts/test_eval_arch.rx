@@ -1,0 +1,95 @@
+var cons = func(h, t) => func(w) => { if (w == 0) { h; } else { t; } };
+var car = func(p) => p(0);
+var cdr = func(p) => p(1);
+var nil = 0;
+var is_nil = func(p) => p == 0;
+
+var mk_node = func(tag, a, b, c) => func(w) => {
+	if (w == 0) { tag; } elif (w == 1) { a; } elif (w == 2) { b; } else { c; }
+};
+var node_tag = func(n) => n(0);
+var node_a = func(n) => n(1);
+var node_b = func(n) => n(2);
+var node_c = func(n) => n(3);
+
+var mk_cell = func(name, init_v, is_const) => {
+	var cur_val = init_v;
+	var cur_const = is_const;
+	func(req) => {
+		if (req == 0) {
+			name;
+		} elif (req == 1) {
+			cur_val;
+		} elif (req == 2) {
+			cur_const;
+		} else {
+			func(new_v) => {
+				cur_val = new_v;
+				cur_val;
+			};
+		}
+	};
+};
+
+var mk_env = func(parent) => {
+	var entries = nil;
+	func(op) => {
+		if (op == "parent") {
+			parent;
+		} elif (op == "entries") {
+			entries;
+		} else {
+			func(new_e) => {
+				entries = new_e;
+				entries;
+			};
+		}
+	};
+};
+
+var env_define = func(env, name, val, is_const) => {
+	var cur = env("entries");
+	var found = nil;
+	var it = cur;
+	while (is_nil(it) == false && is_nil(found)) {
+		if (car(it)(0) == name) {
+			found = car(it);
+		} else {
+			it = cdr(it);
+		}
+	}
+	if (is_nil(found) == false) {
+		(found(3))(val);
+	} else {
+		var new_c = mk_cell(name, val, is_const);
+		var setter = env("set_entries");
+		setter(cons(new_c, cur));
+	}
+	val;
+};
+
+var env_find = func(env, name) => {
+	var cur_env = env;
+	var found = nil;
+	while (is_nil(cur_env) == false && is_nil(found)) {
+		var it = cur_env("entries");
+		while (is_nil(it) == false && is_nil(found)) {
+			if (car(it)(0) == name) {
+				found = car(it);
+			} else {
+				it = cdr(it);
+			}
+		}
+		if (is_nil(found)) {
+			cur_env = cur_env("parent");
+		}
+	}
+	found;
+};
+
+var env = mk_env(nil);
+env_define(env, "x", 100, false);
+var cell = env_find(env, "x");
+outn(cell(1));
+(cell(3))(250);
+outn(cell(1));

@@ -1,0 +1,20 @@
+var is_palindrome = func(s) => {
+	var check = func(start, end) => {
+		if (start >= end) {
+			true;
+		} else {
+			if (char_at(s, start) != char_at(s, end)) {
+				false;
+			} else {
+				check(start + 1, end - 1);
+			}
+		}
+	};
+	check(0, len(s) - 1);
+};
+
+outn(is_palindrome("racecar"));
+outn(is_palindrome("rotor"));
+outn(is_palindrome("radix"));
+outn(is_palindrome("step on no pets"));
+outn(is_palindrome("plan9"));

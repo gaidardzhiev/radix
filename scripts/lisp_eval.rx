@@ -1,0 +1,92 @@
+var pack = func(val, pos) => str(val) + ":" + str(pos);
+var get_val = func(res) => num(substr(res, 0, find(res, ":")));
+var get_pos = func(res) => num(substr(res, find(res, ":") + 1, len(res) - find(res, ":") - 1));
+
+var skip_spaces = func(src, pos) => {
+	var p = pos;
+	while (p < len(src) && (char_at(src, p) == " " || char_at(src, p) == "\t" || char_at(src, p) == "\n")) {
+		p = p + 1;
+	}
+	p;
+};
+
+var parse_num = func(src, pos) => {
+	var p = pos;
+	var s = "";
+	if (char_at(src, p) == "-") {
+		s = "-";
+		p = p + 1;
+	}
+	while (p < len(src) && (ord(src, p) >= 48 && ord(src, p) <= 57)) {
+		s = s + char_at(src, p);
+		p = p + 1;
+	}
+	pack(num(s), p);
+};
+
+var parse_eval = func(src, pos) => {
+	var p = skip_spaces(src, pos);
+	if (char_at(src, p) == "(") {
+		p = skip_spaces(src, p + 1);
+		var op = "";
+		while (p < len(src) && char_at(src, p) != " " && char_at(src, p) != ")") {
+			op = op + char_at(src, p);
+			p = p + 1;
+		}
+
+		if (op == "if") {
+			var cond_res = parse_eval(src, p);
+			var c = get_val(cond_res);
+			var p1 = get_pos(cond_res);
+			var then_res = parse_eval(src, p1);
+			var t_val = get_val(then_res);
+			var p2 = get_pos(then_res);
+			var else_res = parse_eval(src, p2);
+			var e_val = get_val(else_res);
+			var p3 = skip_spaces(src, get_pos(else_res));
+			var res_val = e_val;
+			if (c != 0) {
+				res_val = t_val;
+			}
+			pack(res_val, p3 + 1);
+		} else {
+			var arg1 = parse_eval(src, p);
+			var v1 = get_val(arg1);
+			var p1 = get_pos(arg1);
+			var arg2 = parse_eval(src, p1);
+			var v2 = get_val(arg2);
+			var p2 = skip_spaces(src, get_pos(arg2));
+			var ans = 0;
+			if (op == "+") {
+				ans = v1 + v2;
+			} elif (op == "-") {
+				ans = v1 - v2;
+			} elif (op == "*") {
+				ans = v1 * v2;
+			} elif (op == "/") {
+				ans = v1 / v2;
+			} elif (op == "%") {
+				ans = v1 % v2;
+			} elif (op == "<") {
+				if (v1 < v2) { ans = 1; } else { ans = 0; }
+			} elif (op == ">") {
+				if (v1 > v2) { ans = 1; } else { ans = 0; }
+			} elif (op == "=") {
+				if (v1 == v2) { ans = 1; } else { ans = 0; }
+			}
+			pack(ans, p2 + 1);
+		}
+	} else {
+		parse_num(src, p);
+	}
+};
+
+var lisp = func(src) => get_val(parse_eval(src, 0));
+
+outn(lisp("42"));
+outn(lisp("(+ 10 20)"));
+outn(lisp("(* 6 7)"));
+outn(lisp("(+ (* 3 4) (- 50 8))"));
+outn(lisp("(if (< 3 5) 100 200)"));
+outn(lisp("(if (> 3 5) 100 200)"));
+outn(lisp("(* (+ 1 2) (+ 3 4))"));

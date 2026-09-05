@@ -1,0 +1,9 @@
+var fact = func(n, acc) => {
+    if (n == 0) {
+        acc;
+    } else {
+        fact(n - 1, acc * n);
+    }
+};
+
+outn(fact(5, 1));

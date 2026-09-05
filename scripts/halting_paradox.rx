@@ -1,0 +1,19 @@
+var halts = func(prog, input) => {
+    false;
+};
+
+var diagonal = func(f) => {
+    if (halts(f, f)) {
+        diagonal(f);
+    } else {
+        0;
+    }
+};
+
+var paradox = func(haltFunc) => {
+    diagonal(haltFunc);
+};
+
+var result = paradox(diagonal);
+
+outn(result);

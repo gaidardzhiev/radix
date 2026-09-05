@@ -1,0 +1,22 @@
+var zero  = func(f, x) => x;
+var one   = func(f, x) => f(x);
+var two   = func(f, x) => f(f(x));
+var three = func(f, x) => f(f(f(x)));
+
+var succ = func(n, f, x) => f(n(f, x));
+var add  = func(m, n, f, x) => n(f, m(f, x));
+var mul  = func(m, n, f, x) => n(func(y) => m(f, y), x);
+
+var to_int = func(n) => n(func(x) => x + 1, 0);
+
+var four  = func(f, x) => succ(three, f, x);
+var five  = func(f, x) => add(two, three, f, x);
+var six   = func(f, x) => mul(two, three, f, x);
+var seven = func(f, x) => succ(func(g, y) => add(three, three, g, y), f, x);
+
+outn(to_int(zero));
+outn(to_int(one));
+outn(to_int(four));
+outn(to_int(five));
+outn(to_int(six));
+outn(to_int(seven));

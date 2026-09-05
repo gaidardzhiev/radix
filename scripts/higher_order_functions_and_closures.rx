@@ -1,0 +1,9 @@
+var apply = func(f, x) => {
+    f(x);
+};
+
+var square = func(n) => {
+    n * n;
+};
+
+outn(apply(square, 5));

@@ -1,0 +1,1 @@
+var q = chr(34);var s = "var q = chr(34);var s = ;out(substr(s, 0, 24) + q + s + q + substr(s, 24, len(s) - 24));";out(substr(s, 0, 24) + q + s + q + substr(s, 24, len(s) - 24));

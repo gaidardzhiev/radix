@@ -1,0 +1,557 @@
+var is_digit = func(c) => ord(c) >= 48 && ord(c) <= 57;
+var is_alpha = func(c) => c == "_" || (ord(c) >= 65 && ord(c) <= 90) || (ord(c) >= 97 && ord(c) <= 122);
+var is_space = func(c) => ord(c) <= 32;
+
+var cons = func(h, t) => func(w) => { if (w == 0) { h; } else { t; } };
+var car = func(p) => p(0);
+var cdr = func(p) => p(1);
+var nil = 0;
+var is_nil = func(p) => p == 0;
+
+var rev = func(lst) => {
+	var acc = nil;
+	while (lst != nil) {
+		acc = cons(car(lst), acc);
+		lst = cdr(lst);
+	}
+	acc;
+};
+
+var mk_tok = func(t, v) => func(w) => { if (w == 0) { t; } else { v; } };
+var tok_type = func(tk) => tk(0);
+var tok_val = func(tk) => tk(1);
+
+var tokenize = func(src) => {
+	var n = len(src);
+	var i = 0;
+	var toks = nil;
+	var emit = func(t, v) => {
+		toks = cons(mk_tok(t, v), toks);
+	};
+
+	while (i < n) {
+		var c = char_at(src, i);
+		if (is_space(c)) {
+			i = i + 1;
+		} elif (c == "/" && i + 1 < n && char_at(src, i + 1) == "/") {
+			i = i + 2;
+			while (i < n && char_at(src, i) != "\n") {
+				i = i + 1;
+			}
+		} elif (is_digit(c)) {
+			var s = i;
+			while (i < n && is_digit(char_at(src, i))) {
+				i = i + 1;
+			}
+			emit("num", num(substr(src, s, i - s)));
+		} elif (is_alpha(c)) {
+			var s = i;
+			while (i < n && (is_alpha(char_at(src, i)) || is_digit(char_at(src, i)))) {
+				i = i + 1;
+			}
+			var id = substr(src, s, i - s);
+			if (id == "var" || id == "const" || id == "if" || id == "elif" || id == "else" || id == "while" || id == "func" || id == "outn") {
+				emit(id, 0);
+			} elif (id == "true") {
+				emit("bool", true);
+			} elif (id == "false") {
+				emit("bool", false);
+			} else {
+				emit("id", id);
+			}
+		} elif (c == "\"") {
+			i = i + 1;
+			var str_val = "";
+			while (i < n && char_at(src, i) != "\"") {
+				var s = i;
+				while (i < n && char_at(src, i) != "\"" && char_at(src, i) != "\\") {
+					i = i + 1;
+				}
+				str_val = str_val + substr(src, s, i - s);
+				if (i < n && char_at(src, i) == "\\") {
+					i = i + 1;
+					var esc = char_at(src, i);
+					i = i + 1;
+					if (esc == "n") { str_val = str_val + "\n"; }
+					elif (esc == "t") { str_val = str_val + "\t"; }
+					elif (esc == "r") { str_val = str_val + "\r"; }
+					elif (esc == "\\") { str_val = str_val + "\\"; }
+					elif (esc == "\"") { str_val = str_val + "\""; }
+					elif (esc == "0") { str_val = str_val + chr(0); }
+					else { str_val = str_val + esc; }
+				}
+			}
+			i = i + 1;
+			emit("str", str_val);
+		} elif (c == "=") {
+			if (i + 1 < n && char_at(src, i + 1) == "=") { emit("==", 0); i = i + 2; }
+			elif (i + 1 < n && char_at(src, i + 1) == ">") { emit("=>", 0); i = i + 2; }
+			else { emit("=", 0); i = i + 1; }
+		} elif (c == "!") {
+			if (i + 1 < n && char_at(src, i + 1) == "=") { emit("!=", 0); i = i + 2; }
+			else { emit("!", 0); i = i + 1; }
+		} elif (c == "<") {
+			if (i + 1 < n && char_at(src, i + 1) == "=") { emit("<=", 0); i = i + 2; }
+			else { emit("<", 0); i = i + 1; }
+		} elif (c == ">") {
+			if (i + 1 < n && char_at(src, i + 1) == "=") { emit(">=", 0); i = i + 2; }
+			else { emit(">", 0); i = i + 1; }
+		} elif (c == "&" && i + 1 < n && char_at(src, i + 1) == "&") {
+			emit("&&", 0);
+			i = i + 2;
+		} elif (c == "|" && i + 1 < n && char_at(src, i + 1) == "|") {
+			emit("||", 0);
+			i = i + 2;
+		} else {
+			emit(c, 0);
+			i = i + 1;
+		}
+	}
+	emit("eof", 0);
+	rev(toks);
+};
+
+var mk_node = func(tag, a, b, c) => func(w) => {
+	if (w == 0) { tag; } elif (w == 1) { a; } elif (w == 2) { b; } else { c; }
+};
+
+var mk_cell = func(name, init_v, is_const) => {
+	var cur_val = init_v;
+	var cur_const = is_const;
+	func(req, new_v) => {
+		if (req == 0) { name; }
+		elif (req == 1) { cur_val; }
+		elif (req == 2) { cur_const; }
+		elif (req == 3) { cur_val = new_v; cur_val; }
+		else { cur_const = new_v; cur_const; }
+	};
+};
+
+var mk_env = func(parent) => {
+	var entries = nil;
+	func(req, arg) => {
+		if (req == 0) { parent; }
+		elif (req == 1) { entries; }
+		else { entries = arg; entries; }
+	};
+};
+
+var env_find_here = func(env, name) => {
+	var it = env(1, 0);
+	var found = nil;
+	while (is_nil(it) == false && is_nil(found)) {
+		var cell = car(it);
+		if (cell(0, 0) == name) {
+			found = cell;
+		} else {
+			it = cdr(it);
+		}
+	}
+	found;
+};
+
+var env_find = func(env, name) => {
+	var cur = env;
+	var found = nil;
+	while (is_nil(cur) == false && is_nil(found)) {
+		found = env_find_here(cur, name);
+		if (is_nil(found)) {
+			cur = cur(0, 0);
+		}
+	}
+	found;
+};
+
+var env_define = func(env, name, val, is_const) => {
+	var cell = env_find_here(env, name);
+	if (is_nil(cell) == false) {
+		cell(3, val);
+		cell(4, is_const);
+	} else {
+		var new_c = mk_cell(name, val, is_const);
+		env(2, cons(new_c, env(1, 0)));
+	}
+	val;
+};
+
+var env_assign = func(env, name, val) => {
+	var cell = env_find(env, name);
+	if (is_nil(cell)) {
+		false;
+	} else {
+		cell(3, val);
+		true;
+	}
+};
+
+var mk_builtin = func(name, fn) => func(w) => {
+	if (w == 0) { "builtin"; } else { fn; }
+};
+
+var mk_user_func = func(params, body, closure_env) => func(w) => {
+	if (w == 0) { "user_func"; }
+	elif (w == 1) { params; }
+	elif (w == 2) { body; }
+	else { closure_env; }
+};
+
+var prec_of = func(t) => {
+	if (t == "||") { 1; }
+	elif (t == "&&") { 2; }
+	elif (t == "==" || t == "!=") { 3; }
+	elif (t == "<" || t == "<=" || t == ">" || t == ">=") { 4; }
+	elif (t == "+" || t == "-") { 5; }
+	elif (t == "*" || t == "/" || t == "%") { 6; }
+	else { 0; }
+};
+
+var parse = func(tokens) => {
+	var cur = tokens;
+	var peek = func() => car(cur);
+	var adv = func() => { var t = car(cur); cur = cdr(cur); t; };
+	var check = func(t) => tok_type(car(cur)) == t;
+	var is_tok = func(t) => {
+		if (check(t)) { adv(); true; } else { false; }
+	};
+	var consume = func(t, msg) => {
+		if (check(t) == false) { outn("parse error: " + msg); }
+		adv();
+	};
+
+	var parse_expr = 0;
+	var parse_stmt = 0;
+	var parse_block = 0;
+	var parse_primary = 0;
+	var parse_unary = 0;
+	var parse_bin_rhs = 0;
+	var parse_if = 0;
+	var parse_while = 0;
+
+	parse_primary = func() => {
+		var base = nil;
+		if (is_tok("(")) {
+			base = parse_expr();
+			consume(")", "expected ')'");
+		} elif (is_tok("func")) {
+			consume("(", "expected '(' after func");
+			var params = nil;
+			if (check(")") == false) {
+				params = cons(tok_val(adv()), params);
+				while (is_tok(",")) {
+					params = cons(tok_val(adv()), params);
+				}
+			}
+			consume(")", "expected ')' after parameters");
+			consume("=>", "expected '=>'");
+			var body = nil;
+			if (check("{")) {
+				body = parse_block();
+			} else {
+				body = parse_expr();
+			}
+			base = mk_node("func", rev(params), body, 0);
+		} elif (check("num")) {
+			base = mk_node("num", tok_val(adv()), 0, 0);
+		} elif (check("bool")) {
+			base = mk_node("bool", tok_val(adv()), 0, 0);
+		} elif (check("str")) {
+			base = mk_node("str", tok_val(adv()), 0, 0);
+		} elif (check("id")) {
+			base = mk_node("id", tok_val(adv()), 0, 0);
+		} elif (is_tok("outn")) {
+			base = mk_node("id", "outn", 0, 0);
+		} else {
+			outn("unexpected token in primary: " + tok_type(peek()));
+		}
+
+		while (is_tok("(")) {
+			var args = nil;
+			if (check(")") == false) {
+				args = cons(parse_expr(), args);
+				while (is_tok(",")) {
+					args = cons(parse_expr(), args);
+				}
+			}
+			consume(")", "expected ')' after arguments");
+			base = mk_node("call", base, rev(args), 0);
+		}
+		base;
+	};
+
+	parse_unary = func() => {
+		if (is_tok("!")) {
+			mk_node("un", "!", parse_unary(), 0);
+		} elif (is_tok("-")) {
+			mk_node("un", "-", parse_unary(), 0);
+		} else {
+			parse_primary();
+		}
+	};
+
+	parse_bin_rhs = func(min_prec, lhs) => {
+		var loop = true;
+		var cur_lhs = lhs;
+		while (loop) {
+			var t = tok_type(peek());
+			var prec = prec_of(t);
+			if (prec < min_prec) {
+				loop = false;
+			} else {
+				adv();
+				var rhs = parse_unary();
+				var t2 = tok_type(peek());
+				var prec2 = prec_of(t2);
+				if (prec2 > prec) {
+					rhs = parse_bin_rhs(prec + 1, rhs);
+				}
+				cur_lhs = mk_node("bin", t, cur_lhs, rhs);
+			}
+		}
+		cur_lhs;
+	};
+
+	parse_expr = func() => {
+		var lhs = parse_unary();
+		parse_bin_rhs(1, lhs);
+	};
+
+	parse_block = func() => {
+		consume("{", "expected '{'");
+		var stmts = nil;
+		while (check("}") == false && check("eof") == false) {
+			stmts = cons(parse_stmt(), stmts);
+		}
+		consume("}", "expected '}'");
+		mk_node("block", rev(stmts), 0, 0);
+	};
+
+	parse_if = func() => {
+		var conds = nil;
+		var bodies = nil;
+		consume("(", "expected '(' after if");
+		var c = parse_expr();
+		consume(")", "expected ')' after if cond");
+		var b = parse_block();
+		conds = cons(c, conds);
+		bodies = cons(b, bodies);
+		while (is_tok("elif")) {
+			consume("(", "expected '(' after elif");
+			var cc = parse_expr();
+			consume(")", "expected ')' after elif cond");
+			var bb = parse_block();
+			conds = cons(cc, conds);
+			bodies = cons(bb, bodies);
+		}
+		var else_b = nil;
+		if (is_tok("else")) {
+			else_b = parse_block();
+		}
+		mk_node("if", rev(conds), rev(bodies), else_b);
+	};
+
+	parse_while = func() => {
+		consume("(", "expected '(' after while");
+		var c = parse_expr();
+		consume(")", "expected ')' after while cond");
+		var b = parse_block();
+		mk_node("while", c, b, 0);
+	};
+
+	parse_stmt = func() => {
+		if (check("var") || check("const")) {
+			var is_c = check("const");
+			adv();
+			var id_name = tok_val(adv());
+			consume("=", "expected '='");
+			var e = parse_expr();
+			consume(";", "expected ';'");
+			mk_node("let", id_name, e, is_c);
+		} elif (check("id") && tok_type(car(cdr(cur))) == "=") {
+			var id_name = tok_val(adv());
+			adv();
+			var e = parse_expr();
+			consume(";", "expected ';'");
+			mk_node("assign", id_name, e, 0);
+		} elif (is_tok("if")) {
+			parse_if();
+		} elif (is_tok("while")) {
+			parse_while();
+		} elif (check("{")) {
+			parse_block();
+		} else {
+			var e = parse_expr();
+			consume(";", "expected ';'");
+			e;
+		}
+	};
+
+	if (check("{")) {
+		parse_block();
+	} else {
+		var stmts = nil;
+		while (check("eof") == false) {
+			stmts = cons(parse_stmt(), stmts);
+		}
+		mk_node("block", rev(stmts), 0, 0);
+	}
+};
+
+var eval = func(node, env) => {
+	if (node == 0) {
+		0;
+	} else {
+		var t = node(0);
+		if (t == "num" || t == "bool" || t == "str") {
+			node(1);
+		} elif (t == "id") {
+			var cell = env_find(env, node(1));
+			if (is_nil(cell)) {
+				outn("undefined variable " + node(1));
+				0;
+			} else {
+				cell(1, 0);
+			}
+		} elif (t == "let") {
+			var v = eval(node(2), env);
+			env_define(env, node(1), v, node(3));
+			v;
+		} elif (t == "assign") {
+			var v = eval(node(2), env);
+			var ok = env_assign(env, node(1), v);
+			if (ok == false) {
+				outn("assign to undefined variable " + node(1));
+			}
+			v;
+		} elif (t == "un") {
+			var v = eval(node(2), env);
+			if (node(1) == "-") {
+				0 - v;
+			} else {
+				!v;
+			}
+		} elif (t == "bin") {
+			var op = node(1);
+			if (op == "&&") {
+				var L = eval(node(2), env);
+				if (L == false) {
+					false;
+				} else {
+					eval(node(3), env);
+				}
+			} elif (op == "||") {
+				var L = eval(node(2), env);
+				if (L == true) {
+					true;
+				} else {
+					eval(node(3), env);
+				}
+			} else {
+				var L = eval(node(2), env);
+				var R = eval(node(3), env);
+				if (op == "+") { L + R; }
+				elif (op == "-") { L - R; }
+				elif (op == "*") { L * R; }
+				elif (op == "/") { L / R; }
+				elif (op == "%") { L % R; }
+				elif (op == "==") { L == R; }
+				elif (op == "!=") { L != R; }
+				elif (op == "<") { L < R; }
+				elif (op == "<=") { L <= R; }
+				elif (op == ">") { L > R; }
+				elif (op == ">=") { L >= R; }
+				else { 0; }
+			}
+		} elif (t == "block") {
+			var stmts = node(1);
+			var last = 0;
+			while (is_nil(stmts) == false) {
+				last = eval(car(stmts), env);
+				stmts = cdr(stmts);
+			}
+			last;
+		} elif (t == "if") {
+			var conds = node(1);
+			var bodies = node(2);
+			var done = false;
+			var res = 0;
+			while (is_nil(conds) == false && done == false) {
+				var c = eval(car(conds), env);
+				if (c == true) {
+					done = true;
+					res = eval(car(bodies), env);
+				} else {
+					conds = cdr(conds);
+					bodies = cdr(bodies);
+				}
+			}
+			if (done == false && is_nil(node(3)) == false) {
+				res = eval(node(3), env);
+			}
+			res;
+		} elif (t == "while") {
+			var last = 0;
+			while (eval(node(1), env) == true) {
+				last = eval(node(2), env);
+			}
+			last;
+		} elif (t == "func") {
+			mk_user_func(node(1), node(2), env);
+		} elif (t == "call") {
+			var callee = eval(node(1), env);
+			var raw_args = node(2);
+			var eval_args = nil;
+			while (is_nil(raw_args) == false) {
+				eval_args = cons(eval(car(raw_args), env), eval_args);
+				raw_args = cdr(raw_args);
+			}
+			eval_args = rev(eval_args);
+			if (callee(0) == "builtin") {
+				(callee(1))(eval_args);
+			} else {
+				var params = callee(1);
+				var body = callee(2);
+				var closure_env = callee(3);
+				var callenv = mk_env(closure_env);
+				var p_it = params;
+				var a_it = eval_args;
+				while (is_nil(p_it) == false && is_nil(a_it) == false) {
+					env_define(callenv, car(p_it), car(a_it), false);
+					p_it = cdr(p_it);
+					a_it = cdr(a_it);
+				}
+				eval(body, callenv);
+			}
+		} else {
+			0;
+		}
+	}
+};
+
+var init_env = func(c_argv, c_argc) => {
+	var g = mk_env(nil);
+	var def_bi = func(name, fn) => {
+		env_define(g, name, mk_builtin(name, fn), true);
+	};
+	def_bi("out", func(args) => out(car(args)));
+	def_bi("outn", func(args) => outn(car(args)));
+	def_bi("len", func(args) => len(car(args)));
+	def_bi("char_at", func(args) => char_at(car(args), car(cdr(args))));
+	def_bi("ord", func(args) => {
+		if (is_nil(cdr(args))) { ord(car(args)); } else { ord(car(args), car(cdr(args))); }
+	});
+	def_bi("chr", func(args) => chr(car(args)));
+	def_bi("substr", func(args) => substr(car(args), car(cdr(args)), car(cdr(cdr(args)))));
+	def_bi("str", func(args) => str(car(args)));
+	def_bi("num", func(args) => num(car(args)));
+	def_bi("find", func(args) => find(car(args), car(cdr(args))));
+	def_bi("read_file", func(args) => read_file(car(args)));
+	def_bi("argv", func(args) => c_argv(car(args)));
+	def_bi("argc", func(args) => c_argc());
+	g;
+};
+
+var src = read_file("scripts/chomsky_csl.rd");
+var toks = tokenize(src);
+var ast = parse(toks);
+var env = init_env(func(i) => "", func() => 0);
+eval(ast, env);

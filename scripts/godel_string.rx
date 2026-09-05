@@ -1,0 +1,29 @@
+var quote = func(s) => chr(34) + s + chr(34);
+
+var replace_all = func(str_val, target, rep) => {
+	var pos = find(str_val, target);
+	if (pos == -1) {
+		str_val;
+	} else {
+		var left = substr(str_val, 0, pos);
+		var right = substr(str_val, pos + len(target), len(str_val) - pos - len(target));
+		left + rep + replace_all(right, target, rep);
+	}
+};
+
+var diag = func(formula) => {
+	replace_all(formula, "$", quote(formula));
+};
+
+var psi = "UNPROVABLE(diag($))";
+var godel_sentence = diag(psi);
+
+var prefix_len = len("UNPROVABLE(diag(");
+var quoted_arg = substr(godel_sentence, prefix_len, len(godel_sentence) - prefix_len - 2);
+var raw_arg = substr(quoted_arg, 1, len(quoted_arg) - 2);
+var reconstructed = diag(raw_arg);
+
+outn(godel_sentence);
+outn(raw_arg);
+outn(reconstructed == godel_sentence);
+outn(find(godel_sentence, quote(psi)) != -1);

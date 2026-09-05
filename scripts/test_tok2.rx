@@ -1,0 +1,115 @@
+var is_digit = func(c) => ord(c) >= 48 && ord(c) <= 57;
+var is_alpha = func(c) => c == "_" || (ord(c) >= 65 && ord(c) <= 90) || (ord(c) >= 97 && ord(c) <= 122);
+var is_space = func(c) => ord(c) <= 32;
+
+var cons = func(h, t) => func(w) => { if (w == 0) { h; } else { t; } };
+var car = func(p) => p(0);
+var cdr = func(p) => p(1);
+var nil = 0;
+var rev = func(lst) => {
+	var acc = nil;
+	while (lst != nil) {
+		acc = cons(car(lst), acc);
+		lst = cdr(lst);
+	}
+	acc;
+};
+
+var mk_tok = func(t, v) => func(w) => { if (w == 0) { t; } else { v; } };
+
+var tokenize = func(src) => {
+	var n = len(src);
+	var i = 0;
+	var toks = nil;
+	var emit = func(t, v) => {
+		toks = cons(mk_tok(t, v), toks);
+	};
+
+	while (i < n) {
+		var c = char_at(src, i);
+		if (is_space(c)) {
+			i = i + 1;
+		} elif (c == "/" && i + 1 < n && char_at(src, i + 1) == "/") {
+			i = i + 2;
+			while (i < n && char_at(src, i) != "\n") {
+				i = i + 1;
+			}
+		} elif (is_digit(c)) {
+			var s = i;
+			while (i < n && is_digit(char_at(src, i))) {
+				i = i + 1;
+			}
+			emit("num", num(substr(src, s, i - s)));
+		} elif (is_alpha(c)) {
+			var s = i;
+			while (i < n && (is_alpha(char_at(src, i)) || is_digit(char_at(src, i)))) {
+				i = i + 1;
+			}
+			var id = substr(src, s, i - s);
+			if (id == "var" || id == "const" || id == "if" || id == "elif" || id == "else" || id == "while" || id == "func" || id == "outn") {
+				emit(id, 0);
+			} elif (id == "true") {
+				emit("bool", true);
+			} elif (id == "false") {
+				emit("bool", false);
+			} else {
+				emit("id", id);
+			}
+		} elif (c == "\"") {
+			i = i + 1;
+			var str_val = "";
+			while (i < n && char_at(src, i) != "\"") {
+				var s = i;
+				while (i < n && char_at(src, i) != "\"" && char_at(src, i) != "\\") {
+					i = i + 1;
+				}
+				str_val = str_val + substr(src, s, i - s);
+				if (i < n && char_at(src, i) == "\\") {
+					i = i + 1;
+					var esc = char_at(src, i);
+					i = i + 1;
+					if (esc == "n") { str_val = str_val + "\n"; }
+					elif (esc == "t") { str_val = str_val + "\t"; }
+					elif (esc == "r") { str_val = str_val + "\r"; }
+					elif (esc == "\\") { str_val = str_val + "\\"; }
+					elif (esc == "\"") { str_val = str_val + "\""; }
+					elif (esc == "0") { str_val = str_val + chr(0); }
+					else { str_val = str_val + esc; }
+				}
+			}
+			i = i + 1;
+			emit("str", str_val);
+		} elif (c == "=") {
+			if (i + 1 < n && char_at(src, i + 1) == "=") { emit("==", 0); i = i + 2; }
+			elif (i + 1 < n && char_at(src, i + 1) == ">") { emit("=>", 0); i = i + 2; }
+			else { emit("=", 0); i = i + 1; }
+		} elif (c == "!") {
+			if (i + 1 < n && char_at(src, i + 1) == "=") { emit("!=", 0); i = i + 2; }
+			else { emit("!", 0); i = i + 1; }
+		} elif (c == "<") {
+			if (i + 1 < n && char_at(src, i + 1) == "=") { emit("<=", 0); i = i + 2; }
+			else { emit("<", 0); i = i + 1; }
+		} elif (c == ">") {
+			if (i + 1 < n && char_at(src, i + 1) == "=") { emit(">=", 0); i = i + 2; }
+			else { emit(">", 0); i = i + 1; }
+		} elif (c == "&" && i + 1 < n && char_at(src, i + 1) == "&") {
+			emit("&&", 0);
+			i = i + 2;
+		} elif (c == "|" && i + 1 < n && char_at(src, i + 1) == "|") {
+			emit("||", 0);
+			i = i + 2;
+		} else {
+			emit(c, 0);
+			i = i + 1;
+		}
+	}
+	emit("eof", 0);
+	rev(toks);
+};
+
+var ts = tokenize("var x = 42 + 7; // comment\noutn(\"hello\\nworld\");");
+while (ts != nil) {
+	var tk = car(ts);
+	outn(tk(0) + ": " + tk(1));
+	ts = cdr(ts);
+}

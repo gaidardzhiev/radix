@@ -1,0 +1,15 @@
+var not = func(b) => {
+    if (b) { false; } else { true; }
+};
+
+var and = func(a, b) => { a && b; };
+var or = func(a, b) => { a || b; };
+
+var de_morgan_1 = func(a, b) => {
+    not(and(a, b)) == or(not(a), not(b));
+};
+
+outn(de_morgan_1(true, true));
+outn(de_morgan_1(true, false));
+outn(de_morgan_1(false, true));
+outn(de_morgan_1(false, false));
